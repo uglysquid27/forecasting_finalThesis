@@ -1,67 +1,58 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+
+# Define the data
+data = {
+    'Date': ['3/23/2022', '4/1/2022', '5/1/2022', '6/1/2022', '7/1/2022', '8/1/2022', '9/1/2022', '10/1/2022',
+             '11/1/2022', '12/1/2022', '1/1/2023', '2/1/2023', '3/1/2023', '4/1/2023', '5/1/2023', '6/1/2023',
+             '7/3/2023', '8/1/2023', '9/1/2023'],
+    'Value': [2.073, 2.07, 2.069, 2.9, 2.076, 2.072, 2.077, 2.067, 2.071, 2.069, 2.068, 2.91, 2.902, 2.07, 2.901, 2.908,
+              2.078, 2.07, 2.075]
+}
+
+# Create a DataFrame
+df = pd.DataFrame(data) 
+
+# Convert 'Date' column to datetime format
+df['Date'] = pd.to_datetime(df['Date'])
+
+# Set 'Date' column as index
+df.set_index('Date', inplace=True)
+
+# Display the DataFrame
+print(df)
+
+# Split data into training and testing sets
+train_data = df.iloc[:8]
+test_data = df.iloc[8:]
+
+# Display the training and testing sets
+print("Training Data:")
+print(train_data)
+print("\nTesting Data:")
+print(test_data)
+
 from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.ar_model import AutoReg
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
 
-file_path = "testdata.xlsx"
+# Fit ARIMA model with order (1, 1, 0)
+model = ARIMA(train_data['Value'], order=(1, 1, 0))
+results = model.fit()
 
-df = pd.read_excel(file_path, header=0)
+# Display the model summary
+print(results.summary())
 
-ts = pd.Series(df['Temp_Glue_Scrapper_PV'].values, index=df['epochtime'])
+# Forecast future values
+forecast_steps = len(test_data)  # Number of steps ahead to forecast
+forecast = results.forecast(steps=forecast_steps)
 
-train_size = int(len(ts) * 0.8)
-train, test = ts[:train_size], ts[train_size:]
-
-# Fit Autoregressive (AR) model
-ar_model = AutoReg(train, lags=5)
-ar_model_fit = ar_model.fit()
-
-# Fit Moving Average (MA) model
-ma_model = SARIMAX(train, order=(0, 0, 1))
-ma_model_fit = ma_model.fit()
-
-# Combine AR and MA components to form ARIMA model
-ar_values = ar_model_fit.predict(start=len(train), end=len(train)+len(test)-1, dynamic=False)
-ma_values = ma_model_fit.predict(start=len(train), end=len(train)+len(test)-1)
-
-forecast = ar_values + ma_values
-print(forecast)
-print(test)
-errors = test - forecast
-absolute_errors = np.abs(errors)
-percentage_errors = absolute_errors / test
-percentage_errors[~np.isfinite(percentage_errors)] = 0 
-mape = np.mean(percentage_errors) * 100
-print(f'Mean Absolute Percentage Error (MAPE): {mape:.2f}%')
-
-plt.figure(figsize=(12, 8))
-
-# Plot Autoregressive (AR) component
-plt.subplot(3, 1, 1)
-plt.plot(test.index, ar_values, color='blue')
-plt.title('Autoregressive (AR) Component')
+# Plot the original data and the forecasted values
+plt.figure(figsize=(10, 6))
+plt.plot(train_data.index, train_data['Value'], label='Training Data')
+plt.plot(test_data.index, test_data['Value'], label='Testing Data')
+plt.plot(test_data.index, forecast, label='Forecast')
 plt.xlabel('Date')
 plt.ylabel('Value')
-
-# Plot Moving Average (MA) component
-plt.subplot(3, 1, 2)
-plt.plot(test.index, ma_values, color='orange')
-plt.title('Moving Average (MA) Component')
-plt.xlabel('Date')
-plt.ylabel('Value')
-
-# Plot Forecast
-plt.subplot(3, 1, 3)
-plt.plot(train, label='Train')
-plt.plot(test.index, forecast, label='Forecast', color='red')
-plt.plot(test, label='Test', color='green')
-plt.legend()
 plt.title('ARIMA Forecast')
-plt.xlabel('Date')
-plt.ylabel('Value')
-
-plt.tight_layout()
+plt.legend()
+plt.xticks(rotation=45)
 plt.show()
