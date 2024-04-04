@@ -40,7 +40,7 @@ results = model.fit()
 
 # Display the model summary
 print(results.summary())
-
+ 
 # Forecast future values
 forecast_steps = len(test_data)  # Number of steps ahead to forecast
 forecast = results.forecast(steps=forecast_steps)
