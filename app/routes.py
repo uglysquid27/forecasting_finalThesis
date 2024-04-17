@@ -32,7 +32,7 @@ def get_data_from_table():
         return f"Failed to fetch data from the database: {str(e)}"
 
 @app.route('/arimatest')
-def fetch_data_from_database():
+def fetch_data_from_database_and_predict():
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
@@ -44,18 +44,26 @@ def fetch_data_from_database():
         cursor.close()
         conn.close()
 
-        df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])  # Include 'Device_Name' in columns
+        df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])  
         df['Date'] = pd.to_datetime(df['Date'])
         df.set_index('Date', inplace=True)
 
-        # Convert 'Date' column to string format
         df.index = df.index.strftime('%Y-%m-%d')
 
-        # Convert DataFrame to dictionary
-        data_dict = df.to_dict(orient='records')  # Convert DataFrame to a list of dictionaries
+        forecast_steps = 10  
+        model = ARIMA(df['Value'], order=(1, 1, 0)) 
+        results = model.fit()
+        forecast = results.forecast(steps=forecast_steps)
 
-        return jsonify(data_dict)
+        forecast_values = forecast.tolist()
+
+        response_data = {
+            'forecast_values': forecast_values,
+            'data': df.to_dict(orient='records')
+        }
+
+        return jsonify(response_data)
 
     except Exception as e:
-        print(f"Failed to fetch data from the database: {str(e)}")
-        return jsonify({'error': 'Failed to fetch data from the database'})
+        print(f"Failed to fetch data from the database or perform ARIMA prediction: {str(e)}")
+        return jsonify({'error': 'Failed to fetch data from the database or perform ARIMA prediction'})
