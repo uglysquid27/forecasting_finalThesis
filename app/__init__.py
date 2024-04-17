@@ -1,5 +1,7 @@
-from flask import Flask #Memanggil library Flask
+from flask import Flask
 
-app = Flask(__name__) #Untuk menjelaskan nama modul yang digunakan, sehingga ketika folder lain memanggil folder app akan otomatis teridentifikasi.
+# Initialize Flask app
+app = Flask(__name__)
 
-from app import routes #Memanggil file routes (akan segera dibuat)
+# Import routes from routes.py
+from app import routes
