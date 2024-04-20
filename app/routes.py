@@ -8,7 +8,7 @@ from flask import jsonify
 
 db_config = {
     'host': 'localhost',
-    'user': 'root',
+    'user': 'root', 
     'password': '',
     'database': 'plan_pdm'
 }
