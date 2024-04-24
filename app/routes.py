@@ -27,7 +27,7 @@ def get_data_from_table():
         cursor.close()
         conn.close()
 
-        return '\n'.join(str(row) for row in rows) 
+        return '\n'.join(str(row) for row in rows)
 
     except Exception as e:
         return f"Failed to fetch data from the database: {str(e)}"
@@ -45,24 +45,89 @@ def fetch_data_from_database_and_predict():
         cursor.close()
         conn.close()
 
-        if not rows:
-            return jsonify({'error': 'No data found in the database'})
-
-        df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])  
+        df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])
         df['Date'] = pd.to_datetime(df['Date'])
         df.set_index('Date', inplace=True)
 
-        df['Diff'] = df['Value'].diff()  # Calculate the differences
+        # Explicitly setting the frequency of the index to daily
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d', errors='coerce').to_period('D')
+
+        forecast_steps = len(df) 
+        model = ARIMA(df['Value'], order=(1, 1, 0))
+        results = model.fit()
+        forecast = results.forecast(steps=forecast_steps)
+
+        forecast_values = forecast.tolist()
+
+        # Calculate MAPE if forecasted values and actual values have the same length
+        if len(forecast_values) == len(df):
+            actual_values = df['Value'].values
+            mape = np.mean(np.abs((actual_values - forecast_values) / actual_values)) * 100
+        else:
+            mape = None  # Set MAPE to None if lengths do not match
 
         response_data = {
-            'fetched_data': df.to_dict(orient='records')
+            'forecast_values': forecast_values,
+            'data': df.to_dict(orient='records'),
+            'mape': mape
+        }
+
+        # Return JSON response
+        return jsonify(response_data)
+
+    except Exception as e:
+        error_message = f"Failed to fetch data from the database or perform ARIMA prediction: {str(e)}"
+        print(error_message)
+        return jsonify({'error': error_message})
+@app.route('/montecarlo')
+def monte_carlo_simulation():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT do_date, device_name, mst_history.value FROM mst_history WHERE area_name = 'OCI1' AND device_name = 'CAP - FEEDER C/V 1' AND test_name = '2H'")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])
+        df['Date'] = pd.to_datetime(df['Date'])
+        df.set_index('Date', inplace=True)
+
+        df.index = df.index.strftime('%Y-%m-%d')
+
+        monte_carlo_simulations = 1000 
+        simulation_results = []
+        for _ in range(monte_carlo_simulations):
+            noise = np.random.normal(0, 1, len(df))
+            simulated_values = df['Value'] + noise
+            simulation_results.append(simulated_values.tolist())
+
+        actual_values = df['Value'].values
+        mape_monte_carlo = []
+        for sim_values in simulation_results:
+            mape_value = np.mean(np.abs((actual_values - sim_values) / actual_values)) * 100
+            mape_monte_carlo.append(mape_value)
+
+        # Find the index of the simulation with the lowest MAPE
+        min_mape_index = np.argmin(mape_monte_carlo)
+        min_mape_simulation = simulation_results[min_mape_index]
+
+        response_data = {
+            'min_mape_simulation': min_mape_simulation,
+            'min_mape_value': mape_monte_carlo[min_mape_index],
+            'simulation_results': simulation_results,
+            'mape_monte_carlo': mape_monte_carlo,
+            'data': df.to_dict(orient='records'),
+            
         }
 
         return jsonify(response_data)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': 'Failed to fetch data from the database'})
+        error_message = f"Failed to fetch data from the database or perform Monte Carlo simulation: {str(e)}"
+        print(error_message)
+        return jsonify({'error': error_message})
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     app.run(debug=True)
