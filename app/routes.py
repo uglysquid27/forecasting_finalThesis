@@ -49,7 +49,6 @@ def fetch_data_from_database_and_predict():
         df['Date'] = pd.to_datetime(df['Date'])
         df.set_index('Date', inplace=True)
 
-        # Explicitly setting the frequency of the index to daily
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d', errors='coerce').to_period('D')
 
         forecast_steps = len(df) 
@@ -59,12 +58,11 @@ def fetch_data_from_database_and_predict():
 
         forecast_values = forecast.tolist()
 
-        # Calculate MAPE if forecasted values and actual values have the same length
         if len(forecast_values) == len(df):
             actual_values = df['Value'].values
             mape = np.mean(np.abs((actual_values - forecast_values) / actual_values)) * 100
         else:
-            mape = None  # Set MAPE to None if lengths do not match
+            mape = None
 
         response_data = {
             'forecast_values': forecast_values,
