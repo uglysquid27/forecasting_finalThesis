@@ -8,7 +8,7 @@ import numpy as np
 from flask import jsonify
 
 db_config = {
-    'host': 'localhost',
+    'host': 'localhost', 
     'user': 'root', 
     'password': '',
     'database': 'plan_pdm'
