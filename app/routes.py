@@ -15,7 +15,7 @@ db_config = {
 }
 
 @app.route('/')
-def get_data_from_table():
+def get_data_from_table(): 
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
