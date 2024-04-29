@@ -50,7 +50,7 @@ def fetch_data_from_database_and_predict():
         df.set_index('Date', inplace=True)
 
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d', errors='coerce').to_period('D')
-
+ 
         forecast_steps = len(df) 
         model = ARIMA(df['Value'], order=(1, 1, 0))
         results = model.fit()
