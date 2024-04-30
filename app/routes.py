@@ -37,7 +37,7 @@ def fetch_data_from_database_and_predict():
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-
+ 
         cursor.execute("SELECT do_date, device_name, mst_history.value FROM mst_history WHERE area_name = 'OCI1' AND device_name = 'CAP - FEEDER C/V 1' AND test_name = '2H'")
 
         rows = cursor.fetchall()
