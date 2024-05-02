@@ -42,7 +42,7 @@ def fetch_data_from_database_and_predict():
 
         rows = cursor.fetchall()
 
-        cursor.close()
+        cursor.close() 
         conn.close()
 
         df = pd.DataFrame(rows, columns=['Date', 'Device_Name', 'Value'])
