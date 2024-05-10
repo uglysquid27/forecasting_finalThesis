@@ -32,7 +32,7 @@ def get_data_from_table():
     except Exception as e:
         return f"Failed to fetch data from the database: {str(e)}"
 
-@app.route('/arimatest')
+@app.route('/arimatest') 
 def fetch_data_from_database_and_predict():
     try:
         conn = mysql.connector.connect(**db_config)
@@ -52,7 +52,7 @@ def fetch_data_from_database_and_predict():
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d', errors='coerce').to_period('D')
  
         forecast_steps = len(df) 
-        model = ARIMA(df['Value'], order=(1, 1, 0))
+        model = ARIMA(df['Value'], order=(0, 0, 0))
         results = model.fit()
         forecast = results.forecast(steps=forecast_steps) 
 
